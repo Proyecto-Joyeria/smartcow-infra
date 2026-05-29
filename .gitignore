@@ -1,0 +1,12 @@
+*.log
+*.pem
+*.key
+*.crt
+*.p12
+certs/
+docker/mosquitto/certs/
+docker/postgres/data/
+docker/redis/data/
+.env
+.env.*
+!.env.example
