@@ -1,14 +1,26 @@
 *.log
+
+# Certificados reales (generados por gen-certs.sh — nunca commitear)
 *.pem
 *.key
 *.crt
 *.p12
-certs/
-docker/mosquitto/certs/
+
+# La carpeta certs completa se ignora, pero se trackea el .gitkeep
+docker/mosquitto/certs/*
+!docker/mosquitto/certs/.gitkeep
+
+# Datos persistentes de bases de datos
 docker/postgres/data/
 docker/redis/data/
+
+# Backups generados por backup-db.sh
+backups/
+
+# Variables de entorno locales (.env.example sí se commitea)
 .env
 .env.*
 !.env.example
 
+# Contexto privado de Claude Code
 .claude/

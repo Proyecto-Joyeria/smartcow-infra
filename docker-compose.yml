@@ -1,0 +1,84 @@
+services:
+
+  # ─────────────────────────────────────────
+  # PostgreSQL 15 — base de datos principal
+  # ─────────────────────────────────────────
+  postgres:
+    image: postgres:15
+    container_name: smartcow-postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smartcow-network
+
+  # ─────────────────────────────────────────
+  # Redis 7 — cache, sesiones y pub/sub
+  # ─────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: smartcow-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - smartcow-network
+
+  # ─────────────────────────────────────────
+  # Mosquitto 2 — broker MQTT para collares IoT
+  # Puerto 1883: MQTT sin TLS (solo desarrollo)
+  # Puerto 8883: MQTTS con TLS
+  # ─────────────────────────────────────────
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: smartcow-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "8883:8883"
+    volumes:
+      - ./docker/mosquitto/config:/mosquitto/config:ro
+      - ./docker/mosquitto/data:/mosquitto/data
+      - ./docker/mosquitto/log:/mosquitto/log
+      - ./docker/mosquitto/certs:/mosquitto/certs:ro
+    networks:
+      - smartcow-network
+
+# ─────────────────────────────────────────
+# Volúmenes persistentes
+# Los servicios de aplicación (smartcow-api, smartcow-web, smartcow-ai)
+# se agregarán aquí cuando sus Dockerfiles estén listos.
+# ─────────────────────────────────────────
+volumes:
+  postgres_data:
+  redis_data:
+
+# ─────────────────────────────────────────
+# Red interna compartida por todos los servicios
+# ─────────────────────────────────────────
+networks:
+  smartcow-network:
+    driver: bridge
